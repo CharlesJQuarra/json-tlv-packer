@@ -1,0 +1,3 @@
+[submodule "libjson"]
+	path = libjson
+	url = /home/charlesq/Projects/libjson/
