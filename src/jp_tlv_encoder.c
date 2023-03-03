@@ -5,6 +5,25 @@
 
 #include "jp_tlv_encoder.h"
 
+jp_TLV_records_t* jp_TLV_record_collection_make(apr_pool_t *pool)
+{
+  jp_TLV_records_t* record_collection = apr_palloc(pool, sizeof(jp_TLV_records_t) );
+
+  record_collection->key_index   = apr_hash_make(pool);
+  record_collection->record_list = apr_array_make(pool, 1, sizeof(jp_TLV_record_t));
+
+  return record_collection;
+}
+
+jp_TLV_record_t* jp_TLV_record_make(apr_pool_t *pool)
+{
+  jp_TLV_record_t* record = apr_palloc(pool, sizeof(jp_TLV_record_t) );
+
+  record->kv_pairs_array = apr_array_make(pool, 1, sizeof(jp_TLV_kv_pair_t));
+
+  return record;
+}
+
 size_t find_or_add_key(jp_TLV_records_t *records,
                        const char*       key)
 {
@@ -84,15 +103,19 @@ static int json_visitor(json_object *jso,
                         void        *userarg)
 {
     jp_TLV_record_builder_t* builder = userarg;
+    enum json_type           type    = json_object_get_type(jso);
+
+    printf("json_visitor 0; flags: 0x%x, type: %d  key: %s, index: %ld, value: %s\n", flags, type,
+	       (jso_key ? jso_key : "(null)"), (jso_index ? (long)*jso_index : -1L),
+	       json_object_to_json_string(jso));
 
     if (flags == JSON_C_VISIT_SECOND || parent_jso != builder->jso || jso_key == NULL)
       return JSON_C_VISIT_RETURN_CONTINUE;
 
-    enum json_type type = json_object_get_type(jso);
     size_t key_index    = find_or_add_key(builder->tlv_records, jso_key);
 
 
-    printf("flags: 0x%x, type: %d  key: %s, index of key: %ld, value: %s\n", flags, type,
+    printf("json_visitor 1; flags: 0x%x, type: %d  key: %s, index of key: %ld, value: %s\n", flags, type,
 	       (jso_key ? jso_key : "(null)"), key_index, json_object_to_json_string(jso));
 
     switch (type) {
@@ -115,15 +138,6 @@ static int json_visitor(json_object *jso,
     }
 
     return JSON_C_VISIT_RETURN_CONTINUE;
-}
-
-jp_TLV_record_t* jp_TLV_record_make(apr_pool_t *pool)
-{
-  jp_TLV_record_t* record = apr_palloc(pool, sizeof(jp_TLV_record_t) );
-
-  record->kv_pairs_array = apr_array_make(pool, 1, sizeof(jp_TLV_kv_pair_t));
-
-  return record;
 }
 
 int jp_update_records_from_json(apr_pool_t       *pool,

@@ -37,7 +37,9 @@ static int json_visitor(json_object *jso,
 }
 
 
-int jp_process_file(struct json_tokener *tok,
+int jp_process_file(apr_pool_t          *pool,
+                    jp_TLV_records_t    *tlv_records,
+                    struct json_tokener *tok,
                     FILE                *input)
 {
   #define JP_FREAD_BUFFER_SIZE 4096
@@ -74,6 +76,7 @@ int jp_process_file(struct json_tokener *tok,
         next_segment_size_to_parse = 0;
 
         if (!is_last || is_terminal_character) {
+          printf("jp_process_file: line : %s \n", next_line);
           next_line_object   = jp_process_segment(tok, next_line, line_size + 1);
           last_parsed_offset = i + 1;
           free(next_line);
@@ -83,8 +86,9 @@ int jp_process_file(struct json_tokener *tok,
 
         if (next_line_object)
         {
-          //jp_update_records_from_json(tlv_records, next_line_object);
-          json_c_visit(next_line_object, 0, json_visitor, NULL);
+          printf("jp_process_file: updating records \n");
+          jp_update_records_from_json(pool, tlv_records, next_line_object);
+          //json_c_visit(next_line_object, 0, json_visitor, NULL);
           json_tokener_reset(tok);
           json_object_put(next_line_object);
           next_line_object = NULL;
@@ -140,9 +144,10 @@ int main(int                argc,
   apr_pool_create(&p, NULL);
 
   struct json_tokener *tok = json_tokener_new();
+  jp_TLV_records_t* tlv_records = jp_TLV_record_collection_make(p);
 
   FILE* input = open_filename(argv[1], "r", 1);
-  jp_process_file(tok, input);
+  jp_process_file(p, tlv_records, tok, input);
 
   apr_terminate();
   return rv;

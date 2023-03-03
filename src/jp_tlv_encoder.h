@@ -13,8 +13,8 @@
 typedef struct jp_TLV_records
 {
 
-  apr_hash_t          *key_index;
-  apr_array_header_t **record_list;
+  apr_hash_t         *key_index;
+  apr_array_header_t *record_list;
 
 } jp_TLV_records_t;
 
@@ -34,6 +34,24 @@ typedef struct jp_TLV_record
   apr_array_header_t *kv_pairs_array;
 
 } jp_TLV_record_t;
+
+/**
+ * Creates an instance of a TLV record collection
+ *
+ * @param pool A memory pool
+ *
+ * @returns A pointer to the new instance
+ */
+jp_TLV_records_t* jp_TLV_record_collection_make(apr_pool_t *pool);
+
+/**
+ * Creates an instance of a TLV record
+ *
+ * @param pool A memory pool
+ *
+ * @returns A pointer to the new instance
+ */
+jp_TLV_record_t* jp_TLV_record_make(apr_pool_t *pool);
 
 /**
  * Finds or adds the position of a key in the records
@@ -97,15 +115,6 @@ int add_integer_kv_pair_to_record(jp_TLV_record_t *record,
 int add_double_kv_pair_to_record(jp_TLV_record_t *record,
                                  size_t           key_index,
                                  double           value);
-
-/**
- * Creates an instance of a TLV record
- *
- * @param pool A memory pool
- *
- * @returns A pointer to the new instance
- */
-jp_TLV_record_t* jp_TLV_record_make(apr_pool_t *pool);
 
 /**
  * Incrementally updates the TLV records with a new json_object
