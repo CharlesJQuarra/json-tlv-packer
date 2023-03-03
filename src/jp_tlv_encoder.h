@@ -54,6 +54,17 @@ jp_TLV_records_t* jp_TLV_record_collection_make(apr_pool_t *pool);
 jp_TLV_record_t* jp_TLV_record_make(apr_pool_t *pool);
 
 /**
+ * Adds an existing record to a collection
+ *
+ * @param record_collection The collection
+ * @param record            The record to be added
+ *
+ * @returns zero if succeeded, non-zero if an error condition occurred
+ */
+int jp_add_record_to_TLV_collection(jp_TLV_records_t *record_collection,
+                                    jp_TLV_record_t  *record);
+
+/**
  * Finds or adds the position of a key in the records
  *
  * @param records The TLV encoded records
@@ -61,8 +72,8 @@ jp_TLV_record_t* jp_TLV_record_make(apr_pool_t *pool);
  *
  * @returns The index of the key in the records
  */
-size_t find_or_add_key(jp_TLV_records_t *records,
-                       const char*       key);
+size_t jp_find_or_add_key(jp_TLV_records_t *records,
+                          const char*       key);
 
 /**
  * Adds a key-value pair to a TLV record with a boolean value
@@ -73,9 +84,9 @@ size_t find_or_add_key(jp_TLV_records_t *records,
  *
  * @returns zero if succeeded, non-zero if an error condition occurred
  */
-int add_boolean_kv_pair_to_record(jp_TLV_record_t *record,
-                                  size_t           key_index,
-                                  int              value);
+int jp_add_boolean_kv_pair_to_record(jp_TLV_record_t *record,
+                                     size_t           key_index,
+                                     int              value);
 
 /**
  * Adds a key-value pair to a TLV record with a string value
@@ -86,9 +97,9 @@ int add_boolean_kv_pair_to_record(jp_TLV_record_t *record,
  *
  * @returns zero if succeeded, non-zero if an error condition occurred
  */
-int add_string_kv_pair_to_record(jp_TLV_record_t *record,
-                                 size_t           key_index,
-                                 const char*      value);
+int jp_add_string_kv_pair_to_record(jp_TLV_record_t *record,
+                                    size_t           key_index,
+                                    const char*      value);
 
 /**
  * Adds a key-value pair to a TLV record with an integer value
@@ -99,9 +110,9 @@ int add_string_kv_pair_to_record(jp_TLV_record_t *record,
  *
  * @returns zero if succeeded, non-zero if an error condition occurred
  */
-int add_integer_kv_pair_to_record(jp_TLV_record_t *record,
-                                  size_t           key_index,
-                                  int              value);
+int jp_add_integer_kv_pair_to_record(jp_TLV_record_t *record,
+                                     size_t           key_index,
+                                     int              value);
 
 /**
  * Adds a key-value pair to a TLV record with an floating-point value
@@ -112,9 +123,9 @@ int add_integer_kv_pair_to_record(jp_TLV_record_t *record,
  *
  * @returns zero if succeeded, non-zero if an error condition occurred
  */
-int add_double_kv_pair_to_record(jp_TLV_record_t *record,
-                                 size_t           key_index,
-                                 double           value);
+int jp_add_double_kv_pair_to_record(jp_TLV_record_t *record,
+                                    size_t           key_index,
+                                    double           value);
 
 /**
  * Incrementally updates the TLV records with a new json_object
@@ -151,5 +162,35 @@ int jp_export_record_to_file(jp_TLV_record_t *record,
  */
 int jp_export_key_array_to_file(apr_hash_t *key_index,
                                 FILE       *output);
+
+/**
+ *  Imports A TLV record collection from a binary file
+ *
+ *  @param key_index The TLV key index to export
+ *  @param input     The input TLV record collection file
+ *
+ * @returns A TLV record collection
+ */
+jp_TLV_records_t* jp_import_TLV_record_collection_from_file(apr_hash_t *key_index,
+                                                            FILE       *input);
+
+/**
+ *  Imports A TLV key index from a binary file
+ *
+ *  @param input The input TLV key index file
+ *
+ * @returns A TLV key index
+ */
+apr_hash_t* jp_import_TLV_key_index_from_file(FILE *input);
+
+
+/**
+ *  Builds The inverse index key map from a key index map
+ *
+ *  @param input The TLV key index
+ *
+ * @returns A TLV index map
+ */
+apr_hash_t* jp_build_index_2_key_from_key_index(apr_hash_t* key_index);
 
 #endif /* JP_TLV_ENCODER */
