@@ -25,8 +25,8 @@ set(LIBAPR_INCLUDE ${LIBARY_PREFIX}/include)
 #file(READ ${CMAKE_CURRENT_BINARY_DIR}/apr-link.flags LK_FLAGS)
 
 ########################### hence we must hardcode the output of the flags
-set(COMP_FLAGS -g -O2 -pthread -DLINUX -D_REENTRANT -D_GNU_SOURCE -I/home/charlesq/Projects/nxlog/recruitment-test/build/apr-prefix/src/apr/include/apr-1)
-set(LK_FLAGS -L/home/charlesq/Projects/nxlog/recruitment-test/build/apr-prefix/src/apr/lib -lapr-1 -luuid -lrt -lcrypt  -lpthread -ldl)
+set(COMP_FLAGS -g -O2 -pthread -DLINUX -D_REENTRANT -D_GNU_SOURCE -I${CMAKE_CURRENT_BINARY_DIR}/apr-prefix/src/apr/include/apr-1)
+set(LK_FLAGS -L${CMAKE_CURRENT_BINARY_DIR}/apr-prefix/src/apr/lib -lapr-1 -luuid -lrt -lcrypt  -lpthread -ldl)
 
 
 file(MAKE_DIRECTORY ${LIBAPR_INCLUDE})

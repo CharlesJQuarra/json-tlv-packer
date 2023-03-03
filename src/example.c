@@ -7,7 +7,7 @@
 #include <apr_want.h>
 
 #include <stdlib.h>
-
+#include "json.h"
 struct userRecord
 {
   apr_time_t creationDate;
