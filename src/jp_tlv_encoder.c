@@ -56,6 +56,51 @@ size_t jp_find_or_add_key(jp_TLV_records_t *records,
 }
 
 
+
+size_t jp_get_TLV_kv_pair_layout_size(jp_TLV_kv_pair_t* kv_pair)
+{
+  return 2*sizeof(uint32_t) + kv_pair->value_length;
+}
+
+
+int32_t jp_export_kv_pair_to_buffer(jp_TLV_kv_pair_t *kv_pair,
+                                    char             *buffer,
+                                    size_t            buffer_size)
+{
+  size_t total = jp_get_TLV_kv_pair_layout_size(kv_pair);
+
+  printf("jp_export_kv_pair_to_buffer: kv pair size: %ld buffer size: %ld \n", total, buffer_size);
+
+  return 0;
+}
+
+size_t jp_get_TLV_record_layout_size(jp_TLV_record_t* record)
+{
+  size_t              total    = sizeof(uint32_t);
+  apr_array_header_t* kv_array = record->kv_pairs_array;
+
+  for (int i = 0; i < kv_array->nelts; i++) {
+    jp_TLV_kv_pair_t* elem = & ((jp_TLV_kv_pair_t*)kv_array->elts)[i];
+
+    total += jp_get_TLV_kv_pair_layout_size(elem);
+  }
+
+  return total;
+}
+
+
+int32_t jp_export_record_to_buffer(jp_TLV_record_t *record,
+                                   char            *buffer,
+                                   size_t           buffer_size)
+{
+  size_t total_record_layout_size = jp_get_TLV_record_layout_size(record);
+
+  printf("jp_export_record_to_buffer: total record size: %ld available buffer: %ld \n", total_record_layout_size, buffer_size);
+
+  return 0;
+}
+
+
 int jp_add_boolean_kv_pair_to_record(jp_TLV_record_t *record,
                                      size_t           key_index,
                                      int              value)
@@ -172,12 +217,6 @@ int jp_update_records_from_json(apr_pool_t       *pool,
   json_c_visit(jso, 0, json_record_builder_visitor, &builder);
 
   return 0;
-}
-
-int jp_export_record_to_buffer(jp_TLV_record_t *record,
-                               char            *buffer,
-                               size_t           buffer_size)
-{
 }
 
 

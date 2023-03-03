@@ -21,8 +21,8 @@ typedef struct jp_TLV_records
 typedef struct jp_TLV_kv_pair
 {
 
-  size_t   key_index;
-  size_t   value_length;
+  uint32_t key_index;
+  uint32_t value_length;
   void*    value_buffer;
   uint32_t value_type;
 
@@ -34,6 +34,24 @@ typedef struct jp_TLV_record
   apr_array_header_t *kv_pairs_array;
 
 } jp_TLV_record_t;
+
+/**
+ * Gets the TLV layout size of a key-value pair
+ *
+ * @param kv_pair A key-value pair
+ *
+ * @returns The layout size in bytes
+ */
+size_t jp_get_TLV_kv_pair_layout_size(jp_TLV_kv_pair_t* kv_pair);
+
+/**
+ * Gets the TLV layout size of a TLV record
+ *
+ * @param record A TLV record
+ *
+ * @returns The layout size in bytes
+ */
+size_t jp_get_TLV_record_layout_size(jp_TLV_record_t* record);
 
 /**
  * Creates an instance of a TLV record collection
@@ -155,17 +173,30 @@ int jp_update_records_from_file(apr_pool_t       *pool,
                                 FILE             *input);
 
 /**
+ *  Exports a TLV record key-value pair to a buffer
+ *
+ *  @param kv_pair     The key-value pair to export
+ *  @param buffer      The output buffer
+ *  @param buffer_size The maximum allowed written bytes to the buffer
+ *
+ * @returns bytes written to the buffer, -1 if the buffer_size was too small
+ */
+int32_t jp_export_kv_pair_to_buffer(jp_TLV_kv_pair_t *kv_pair,
+                                    char             *buffer,
+                                    size_t            buffer_size);
+
+/**
  *  Exports a TLV record to a buffer
  *
  *  @param record      The TLV record to export
  *  @param buffer      The output buffer
  *  @param buffer_size The maximum allowed written bytes to the buffer
  *
- * @returns zero if succeeded, non-zero if an error condition occurred, including not enough allowed bytes in the buffer
+ * @returns bytes written to the buffer, -1 if the buffer_size was too small
  */
-int jp_export_record_to_buffer(jp_TLV_record_t *record,
-                               char            *buffer,
-                               size_t           buffer_size);
+int32_t jp_export_record_to_buffer(jp_TLV_record_t *record,
+                                   char            *buffer,
+                                   size_t           buffer_size);
 
 /**
  *  Exports a TLV record to a file
