@@ -8,8 +8,11 @@
 
 #include <json_object.h>
 
+#include <stdio.h>
+
 typedef struct jp_TLV_records
 {
+
   apr_hash_t          *key_index;
   apr_array_header_t **record_list;
 
@@ -28,7 +31,6 @@ typedef struct jp_TLV_kv_pair
 typedef struct jp_TLV_record
 {
 
-  jp_TLV_records     *parent_collection;
   apr_array_header_t *kv_pairs_array;
 
 } jp_TLV_record_t;
@@ -114,9 +116,9 @@ jp_TLV_record_t* jp_TLV_record_make(apr_pool_t *pool);
  *
  * @returns zero if succeeded, non-zero if an error condition occurred
  */
-int jp_update_records_from_json(apr_pool_t        *pool,
-                                jp_TLV_records_t  *records,
-                                const json_object *jso);
+int jp_update_records_from_json(apr_pool_t       *pool,
+                                jp_TLV_records_t *records,
+                                json_object      *jso);
 
 
 /**
@@ -133,12 +135,12 @@ int jp_export_record_to_file(jp_TLV_record_t *record,
 /**
  *  Exports the TLV key array to a file
  *
- *  @param key_array The TLV key array to export
+ *  @param key_index The TLV key index to export
  *  @param output    The output file
  *
  * @returns zero if succeeded, non-zero if an error condition occurred
  */
-int jp_export_key_array_to_file(apr_array_header_t *key_array,
-                                FILE               *output);
+int jp_export_key_array_to_file(apr_hash_t *key_index,
+                                FILE       *output);
 
 #endif /* JP_TLV_ENCODER */

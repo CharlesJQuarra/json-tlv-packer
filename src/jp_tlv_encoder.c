@@ -1,6 +1,8 @@
 
 #include <apr_strings.h>
 
+#include <json_visit.h>
+
 #include "jp_tlv_encoder.h"
 
 size_t find_or_add_key(jp_TLV_records_t *records,
@@ -10,12 +12,12 @@ size_t find_or_add_key(jp_TLV_records_t *records,
 
   if (NULL == index_as_ptr) {
     size_t next_pos = apr_hash_count(records->key_index) + 1;
-    apr_hash_set(records->key_index, key, APR_HASH_KEY_STRING, next_pos);
+    apr_hash_set(records->key_index, key, APR_HASH_KEY_STRING, (void*)next_pos);
 
     return next_pos;
   }
 
-  return index_as_ptr;
+  return (size_t)index_as_ptr;
 }
 
 int add_boolean_kv_pair_to_record(jp_TLV_record_t *record,
@@ -69,7 +71,7 @@ typedef struct jp_TLV_record_builder
 {
 
   const json_object *jso;
-  jp_TLV_record     *tlv_record;
+  jp_TLV_record_t   *tlv_record;
   jp_TLV_records_t  *tlv_records;
 
 } jp_TLV_record_builder_t;
@@ -81,7 +83,7 @@ static int json_visitor(json_object *jso,
                         size_t      *jso_index,
                         void        *userarg)
 {
-    jp_TLV_record_builder* builder = userarg;
+    jp_TLV_record_builder_t* builder = userarg;
 
     if (flags == JSON_C_VISIT_SECOND || parent_jso != builder->jso || jso_key == NULL)
       return JSON_C_VISIT_RETURN_CONTINUE;
@@ -109,6 +111,7 @@ static int json_visitor(json_object *jso,
       break;
 
       default:
+      break;
     }
 
     return JSON_C_VISIT_RETURN_CONTINUE;
@@ -123,11 +126,11 @@ jp_TLV_record_t* jp_TLV_record_make(apr_pool_t *pool)
   return record;
 }
 
-int jp_update_records_from_json(apr_pool_t        *pool,
-                                jp_TLV_records    *records,
-                                const json_object *jso)
+int jp_update_records_from_json(apr_pool_t       *pool,
+                                jp_TLV_records_t *records,
+                                json_object      *jso)
 {
-  jp_TLV_record_builder builder;
+  jp_TLV_record_builder_t builder;
 
   builder.jso         = jso;
   builder.tlv_record  = jp_TLV_record_make(pool);
@@ -137,12 +140,12 @@ int jp_update_records_from_json(apr_pool_t        *pool,
 
 }
 
-int jp_export_record_to_file(jp_TLV_record *record,
-                             FILE          *output)
+int jp_export_record_to_file(jp_TLV_record_t *record,
+                             FILE            *output)
 {
 }
 
-int jp_export_key_array_to_file(apr_array_header_t *key_array,
-                                FILE               *output)
+int jp_export_key_array_to_file(apr_hash_t *key_index,
+                                FILE       *output)
 {
 }
