@@ -142,6 +142,32 @@ int jp_update_records_from_json(apr_pool_t       *pool,
 
 
 /**
+ * Incrementally updates the TLV records from an input JSON file
+ *
+ * @param pool    A memory pool
+ * @param records The TLV encoded records
+ * @param input   An input file with one json record per line
+ *
+ * @returns zero if succeeded, non-zero if an error condition occurred
+ */
+int jp_update_records_from_file(apr_pool_t       *pool,
+                                jp_TLV_records_t *tlv_records,
+                                FILE             *input);
+
+/**
+ *  Exports a TLV record to a buffer
+ *
+ *  @param record      The TLV record to export
+ *  @param buffer      The output buffer
+ *  @param buffer_size The maximum allowed written bytes to the buffer
+ *
+ * @returns zero if succeeded, non-zero if an error condition occurred, including not enough allowed bytes in the buffer
+ */
+int jp_export_record_to_buffer(jp_TLV_record_t *record,
+                               char            *buffer,
+                               size_t           buffer_size);
+
+/**
  *  Exports a TLV record to a file
  *
  *  @param record The TLV record to export

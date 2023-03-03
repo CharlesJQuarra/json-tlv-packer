@@ -10,14 +10,13 @@ include(cmake/import-apr.cmake)
 add_subdirectory(json-c)
 
 set(LIB_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/jp_tlv_encoder.c
-               ${CMAKE_CURRENT_SOURCE_DIR}/src/jp_invert_key_index_map.c)
+                ${CMAKE_CURRENT_SOURCE_DIR}/src/jp_tlv_records.c
+                ${CMAKE_CURRENT_SOURCE_DIR}/src/jp_key_array_encoder.c
+                ${CMAKE_CURRENT_SOURCE_DIR}/src/jp_invert_key_index_map.c)
 
 add_library(jp_tlv_encoder ${LIB_SOURCES})
 target_link_libraries(jp_tlv_encoder PRIVATE $<$<LINK_LANGUAGE:C>:libapr> $<$<LINK_LANGUAGE:C>:json-c>)
 target_sources(jp_tlv_encoder PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/jp_tlv_encoder.h)
-#target_include_directories(jp_tlv_encoder PUBLIC
-#  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/jp_tlv_encoder.h>
-#)
 
 add_executable(example ${CMAKE_CURRENT_SOURCE_DIR}/src/example.c)
 target_link_libraries(example PRIVATE $<$<LINK_LANGUAGE:C>:libapr> $<$<LINK_LANGUAGE:C>:json-c>)
