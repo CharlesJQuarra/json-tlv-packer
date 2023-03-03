@@ -164,6 +164,17 @@ int jp_export_key_array_to_file(apr_hash_t *key_index,
                                 FILE       *output);
 
 /**
+ *  Imports A TLV key index from a binary file
+ *
+ * @param pool   A memory pool
+ *  @param input The input TLV key index file
+ *
+ * @returns A TLV key index
+ */
+apr_hash_t* jp_import_TLV_key_index_from_file(apr_pool_t *pool,
+                                              FILE       *input);
+
+/**
  *  Imports A TLV record collection from a binary file
  *
  *  @param key_index The TLV key index to export
@@ -173,16 +184,6 @@ int jp_export_key_array_to_file(apr_hash_t *key_index,
  */
 jp_TLV_records_t* jp_import_TLV_record_collection_from_file(apr_hash_t *key_index,
                                                             FILE       *input);
-
-/**
- *  Imports A TLV key index from a binary file
- *
- *  @param input The input TLV key index file
- *
- * @returns A TLV key index
- */
-apr_hash_t* jp_import_TLV_key_index_from_file(FILE *input);
-
 
 /**
  *  Builds The inverse index key map from a key index map

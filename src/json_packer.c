@@ -106,7 +106,7 @@ FILE *open_filename(const char *filename, const char *opt, int is_input)
 
 void close_filename(const char *filename, FILE *file)
 {
-	if (strcmp(filename, "-") != 0)
+	if (file != NULL && strcmp(filename, "-") != 0)
 		fclose(file);
 }
 
@@ -120,11 +120,14 @@ int main(int                argc,
   apr_app_initialize(&argc, &argv, NULL);
   atexit(apr_terminate);
 
+  const char* inputfile       = (argc > 1) ? argv[1] : NULL;
+  const char* keyarrayoutfile = (argc > 2) ? argv[2] : NULL;
+
   apr_pool_create(&p, NULL);
 
   jp_TLV_records_t* tlv_records = jp_TLV_record_collection_make(p);
 
-  FILE* input = open_filename(argv[1], "r", 1);
+  FILE* input = open_filename(inputfile, "r", 1);
   jp_process_file(p, tlv_records, input);
 
   apr_hash_t* key_index = tlv_records->key_index;
@@ -138,7 +141,30 @@ int main(int                argc,
       printf("ht iteration: key=%ld, val=%s\n", k, v);
   }
 
-  close_filename(argv[1], input);
+  close_filename(inputfile, input);
+
+  if (keyarrayoutfile) {
+    FILE* out = open_filename(keyarrayoutfile, "wb", 0);
+    jp_export_key_array_to_file(key_index, out);
+
+    close_filename(keyarrayoutfile, out);
+
+    FILE* readkeyarrayfile = open_filename(keyarrayoutfile, "rb", 1);
+    apr_hash_t* key_index_from_file = jp_import_TLV_key_index_from_file(p, readkeyarrayfile);
+
+    if (NULL == key_index_from_file) {
+      printf("errors reading %s\n", keyarrayoutfile);
+    } else {
+      printf("ready to loop on key_index_from_file \n");
+      for (apr_hash_index_t *hi = apr_hash_first(NULL, key_index_from_file); hi; hi = apr_hash_next(hi)) {
+        size_t      v;
+        const char *k;
+
+        apr_hash_this(hi, (const void**)&k, NULL, (void**)&v);
+        printf("key_index_from_file: key=%s, val=%ld\n", k, v);
+      }
+    }
+  }
 
   apr_terminate();
   return rv;
