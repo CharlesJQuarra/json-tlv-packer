@@ -18,13 +18,31 @@ typedef struct jp_TLV_records
 
 } jp_TLV_records_t;
 
+typedef struct jp_TLV_string
+{
+  uint32_t value_length;
+  char*    value_buffer;
+} jp_TLV_string_t;
+
+typedef union jp_TLV_union {
+
+  int32_t         integer_value;
+  double          double_value;
+  jp_TLV_string_t string_value;
+
+} jp_TLV_union_t;
+
+#define JP_TYPE_BOOLEAN   0
+#define JP_TYPE_INTEGER   1
+#define JP_TYPE_DOUBLE    2
+#define JP_TYPE_STRING    3
+
 typedef struct jp_TLV_kv_pair
 {
 
-  uint32_t key_index;
-  uint32_t value_length;
-  void*    value_buffer;
-  uint32_t value_type;
+  uint32_t       key_index;
+  uint32_t       value_type;
+  jp_TLV_union_t union_v;
 
 } jp_TLV_kv_pair_t;
 
@@ -35,23 +53,6 @@ typedef struct jp_TLV_record
 
 } jp_TLV_record_t;
 
-/**
- * Gets the TLV layout size of a key-value pair
- *
- * @param kv_pair A key-value pair
- *
- * @returns The layout size in bytes
- */
-size_t jp_get_TLV_kv_pair_layout_size(jp_TLV_kv_pair_t* kv_pair);
-
-/**
- * Gets the TLV layout size of a TLV record
- *
- * @param record A TLV record
- *
- * @returns The layout size in bytes
- */
-size_t jp_get_TLV_record_layout_size(jp_TLV_record_t* record);
 
 /**
  * Creates an instance of a TLV record collection
@@ -110,7 +111,6 @@ int jp_add_boolean_kv_pair_to_record(jp_TLV_record_t *record,
  * Adds a key-value pair to a TLV record with a string value
  *
  * @param record    The record that owns the key-value pair
- * @param key_index The key index
  * @param value     A string value
  *
  * @returns zero if succeeded, non-zero if an error condition occurred
@@ -146,6 +146,50 @@ int jp_add_double_kv_pair_to_record(jp_TLV_record_t *record,
                                     double           value);
 
 /**
+ * Reads a boolean value from a key-value pair if it is the correct type
+ *
+ * @param kv_pair   The key-value pair
+ * @param value     A boolean value
+ *
+ * @returns zero if succeeded, non-zero if it is not the correct type
+ */
+int jp_read_boolean_from_kv_pair(const jp_TLV_kv_pair_t *kv_pair,
+                                       int              *value);
+
+/**
+ * Reads a string value from a key-value pair if it is the correct type
+ *
+ * @param kv_pair   The key-value pair
+ * @param value     A string value
+ *
+ * @returns zero if succeeded, non-zero if it is not the correct type
+ */
+int jp_read_string_from_kv_pair(const jp_TLV_kv_pair_t  *kv_pair,
+                                      char             **value);
+
+/**
+ * Reads a integer value from a key-value pair if it is the correct type
+ *
+ * @param kv_pair   The key-value pair
+ * @param value     A integer value
+ *
+ * @returns zero if succeeded, non-zero if it is not the correct type
+ */
+int jp_read_integer_from_kv_pair(const jp_TLV_kv_pair_t *kv_pair,
+                                       int32_t          *value);
+
+/**
+ * Reads a double value from a key-value pair if it is the correct type
+ *
+ * @param kv_pair   The key-value pair
+ * @param value     A double value
+ *
+ * @returns zero if succeeded, non-zero if it is not the correct type
+ */
+int jp_read_double_from_kv_pair(const jp_TLV_kv_pair_t *kv_pair,
+                                      double           *value);
+
+/**
  * Incrementally updates the TLV records with a new json_object
  *
  * @param pool    A memory pool
@@ -179,11 +223,26 @@ int jp_update_records_from_file(apr_pool_t       *pool,
  *  @param buffer      The output buffer
  *  @param buffer_size The maximum allowed written bytes to the buffer
  *
- * @returns bytes written to the buffer, -1 if the buffer_size was too small
+ * @returns bytes written to the buffer, 0 if the buffer_size was too small
  */
-int32_t jp_export_kv_pair_to_buffer(jp_TLV_kv_pair_t *kv_pair,
-                                    char             *buffer,
-                                    size_t            buffer_size);
+uint32_t jp_export_kv_pair_to_buffer(jp_TLV_kv_pair_t *kv_pair,
+                                     uint8_t          *buffer,
+                                     size_t            buffer_size);
+
+/**
+ *  Imports a TLV record key-value pair from a buffer
+ *
+ *  @param pool        A memory pool
+ *  @param kv_pair     The key-value pair to import
+ *  @param buffer      The output buffer
+ *  @param buffer_size The maximum allowed written bytes to the buffer
+ *
+ * @returns bytes read from the buffer, 0 if the buffer_size was too small
+ */
+uint32_t jp_import_kv_pair_from_buffer(      apr_pool_t       *pool,
+                                             jp_TLV_kv_pair_t *kv_pair,
+                                       const uint8_t          *buffer,
+                                             size_t            buffer_size);
 
 /**
  *  Exports a TLV record to a buffer
@@ -192,11 +251,27 @@ int32_t jp_export_kv_pair_to_buffer(jp_TLV_kv_pair_t *kv_pair,
  *  @param buffer      The output buffer
  *  @param buffer_size The maximum allowed written bytes to the buffer
  *
- * @returns bytes written to the buffer, -1 if the buffer_size was too small
+ * @returns bytes written to the buffer, 0 if the buffer_size was too small
  */
-int32_t jp_export_record_to_buffer(jp_TLV_record_t *record,
-                                   char            *buffer,
-                                   size_t           buffer_size);
+uint32_t jp_export_record_to_buffer(const jp_TLV_record_t *record,
+                                          uint8_t         *buffer,
+                                          size_t           buffer_size);
+
+/**
+ *  Imports a TLV record from a buffer
+ *
+ *  @param pool        A memory pool
+ *  @param record      The TLV record to write
+ *  @param buffer      The input buffer
+ *  @param buffer_size The maximum allowed bytes to read from the buffer
+ *
+ * @returns bytes read from the buffer, 0 if the buffer_size was too small
+ */
+uint32_t jp_import_record_from_buffer(      apr_pool_t       *pool,
+                                            jp_TLV_record_t **record,
+                                      const uint8_t          *buffer,
+                                            size_t            buffer_size);
+
 
 /**
  *  Exports a TLV record to a file
