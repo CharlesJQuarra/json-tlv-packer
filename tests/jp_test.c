@@ -31,7 +31,7 @@ int compare_kv_pairs(const jp_TLV_kv_pair_t* pair_A, const jp_TLV_kv_pair_t* pai
   int boolean_A, boolean_B;
   int32_t integer_A, integer_B;
   double double_A, double_B;
-  const char *string_A, *string_B;
+  char *string_A, *string_B;
 
   switch (pair_A->value_type) {
     case JP_TYPE_BOOLEAN:
@@ -54,7 +54,7 @@ int compare_kv_pairs(const jp_TLV_kv_pair_t* pair_A, const jp_TLV_kv_pair_t* pai
     jp_read_string_from_kv_pair(pair_B, & string_B);
     return strcmp(string_A, string_B);
 
-    case default:
+    default:
     return -1;
   }
 
@@ -100,7 +100,7 @@ void test_kv_encoding(const jp_TLV_record_t* record, char *out_buffer, size_t bu
     printf("test_encoding: expected type: %d imported type: %d \n", expected_elem->value_type, imported_elem.value_type);
     printf("test_encoding: expected value: %d imported value: %d \n", expected_elem->union_v.integer_value, imported_elem.union_v.integer_value);
     */
-    ck_assert_msg(0 == compare_kv_pairs(expected_elem, & imported_elem, "key value pairs do not match");
+    ck_assert_msg(0 == compare_kv_pairs(expected_elem, & imported_elem), "key value pairs do not match");
   }
 
   printf("test_kv_encoding: bytes read: %d bytes written %d \n", read, written);
@@ -206,7 +206,7 @@ START_TEST(test_composite_KV_Pair_Encoding)
 END_TEST
 
 
-int compare_records(jp_TLV_record_t* record_A, jp_TLV_record_t* B) {
+int compare_records(jp_TLV_record_t* record_A, jp_TLV_record_t* record_B) {
 
   apr_array_header_t* kv_array_A = record_A->kv_pairs_array;
   apr_array_header_t* kv_array_B = record_B->kv_pairs_array;
@@ -239,17 +239,17 @@ START_TEST(test_TLV_record_export_import)
   ck_assert_msg(strlen(value1) < 32, " test string too long");
   jp_add_string_kv_pair_to_record(record, 1, value1);
 
-  printf("test_composite_KV_Pair_Encoding: encoded 1st value: '%s'\n", value1);
+  printf("test_TLV_record_export_import: encoded 1st value: '%s'\n", value1);
 
   double value2 = 3.1416;
   jp_add_double_kv_pair_to_record(record, 18, value2);
 
-  printf("test_composite_KV_Pair_Encoding: encoded 2nd value: %f\n", value2);
+  printf("test_TLV_record_export_import: encoded 2nd value: %f\n", value2);
 
   int32_t value3 = -18;
   jp_add_integer_kv_pair_to_record(record, 517, value3);
 
-  printf("test_composite_KV_Pair_Encoding: encoded 3rd value: %d\n", value3);
+  printf("test_TLV_record_export_import: encoded 3rd value: %d\n", value3);
 
   uint32_t written = jp_export_record_to_buffer(record, out_buffer, BUFFER_SIZE);
   uint32_t read    = jp_import_record_from_buffer(pool, & imported_record, out_buffer, BUFFER_SIZE);
@@ -277,6 +277,7 @@ Suite * kv_pair_encoding_suite()
     tcase_add_test(tc_core_kv_encoding, test_short_string_KV_Pair_Encoding);
     tcase_add_test(tc_core_kv_encoding, test_long_string_KV_Pair_Encoding);
     tcase_add_test(tc_core_kv_encoding, test_composite_KV_Pair_Encoding);
+    tcase_add_test(tc_core_kv_encoding, test_TLV_record_export_import);
 
     suite_add_tcase(s, tc_core_kv_encoding);
 

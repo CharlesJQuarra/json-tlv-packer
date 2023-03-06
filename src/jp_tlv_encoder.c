@@ -585,7 +585,7 @@ uint32_t jp_import_record_from_buffer(      apr_pool_t       *pool,
 
   apr_array_header_t* kv_array = (*record)->kv_pairs_array;
 
-  uint32_t length_read = jp_import_uint32_to_buffer(& nb_pairs, buffer, buffer_size);
+  uint32_t length_read = jp_import_uint32_from_buffer(& nb_pairs, buffer, buffer_size);
 
   if (0 == length_read)
     return 0;
@@ -598,7 +598,7 @@ uint32_t jp_import_record_from_buffer(      apr_pool_t       *pool,
     if (read > buffer_size)
       return 0;
 
-    uint32_t new_read = jp_import_kv_pair_to_buffer(pool, elem, buffer + read, buffer_size - read);
+    uint32_t new_read = jp_import_kv_pair_from_buffer(pool, elem, buffer + read, buffer_size - read);
 
     if (0 == new_read)
       return 0;
