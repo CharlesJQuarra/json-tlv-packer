@@ -192,29 +192,15 @@ int jp_read_double_from_kv_pair(const jp_TLV_kv_pair_t *kv_pair,
 /**
  * Incrementally updates the TLV records with a new json_object
  *
- * @param pool    A memory pool
- * @param records The TLV encoded records
- * @param jso     A new json record object
+ * @param pool              A memory pool
+ * @param record_collection The TLV record collection
+ * @param jso               A new json record object
  *
  * @returns zero if succeeded, non-zero if an error condition occurred
  */
 int jp_update_records_from_json(apr_pool_t       *pool,
-                                jp_TLV_records_t *records,
+                                jp_TLV_records_t *record_collection,
                                 json_object      *jso);
-
-
-/**
- * Incrementally updates the TLV records from an input JSON file
- *
- * @param pool    A memory pool
- * @param records The TLV encoded records
- * @param input   An input file with one json record per line
- *
- * @returns zero if succeeded, non-zero if an error condition occurred
- */
-int jp_update_records_from_file(apr_pool_t       *pool,
-                                jp_TLV_records_t *tlv_records,
-                                FILE             *input);
 
 /**
  *  Exports a TLV record key-value pair to a buffer
@@ -274,25 +260,14 @@ uint32_t jp_import_record_from_buffer(      apr_pool_t       *pool,
 
 
 /**
- *  Exports a TLV record to a file
- *
- *  @param record The TLV record to export
- *  @param output The output file
- *
- * @returns zero if succeeded, non-zero if an error condition occurred
- */
-int jp_export_record_to_file(jp_TLV_record_t *record,
-                             FILE            *output);
-
-/**
- *  Exports the TLV key array to a file
+ *  Exports the TLV key index to a file
  *
  *  @param key_index The TLV key index to export
  *  @param output    The output file
  *
  * @returns zero if succeeded, non-zero if an error condition occurred
  */
-int jp_export_key_array_to_file(apr_hash_t *key_index,
+int jp_export_key_index_to_file(apr_hash_t *key_index,
                                 FILE       *output);
 
 /**
@@ -303,19 +278,9 @@ int jp_export_key_array_to_file(apr_hash_t *key_index,
  *
  * @returns A TLV key index
  */
-apr_hash_t* jp_import_TLV_key_index_from_file(apr_pool_t *pool,
-                                              FILE       *input);
+apr_hash_t* jp_import_key_index_from_file(apr_pool_t *pool,
+                                          FILE       *input);
 
-/**
- *  Imports A TLV record collection from a binary file
- *
- *  @param key_index The TLV key index to export
- *  @param input     The input TLV record collection file
- *
- * @returns A TLV record collection
- */
-jp_TLV_records_t* jp_import_TLV_record_collection_from_file(apr_hash_t *key_index,
-                                                            FILE       *input);
 
 /**
  *  Builds The inverse index key map from a key index map
@@ -325,5 +290,51 @@ jp_TLV_records_t* jp_import_TLV_record_collection_from_file(apr_hash_t *key_inde
  * @returns A TLV index map
  */
 apr_hash_t* jp_build_index_2_key_from_key_index(apr_hash_t* key_index);
+
+
+/**
+ * Incrementally updates the TLV records from an input JSON file
+ *
+ * @param pool              A memory pool
+ * @param record_collection The TLV record collection
+ * @param input             An input file with one json record per line
+ *
+ * @returns zero if succeeded, non-zero if an error condition occurred
+ *
+ * @remarks More than one JSON file can be used to update the same record collection
+ */
+int jp_update_records_from_json_file(apr_pool_t       *pool,
+                                     jp_TLV_records_t *record_collection,
+                                     FILE             *input);
+
+
+/**
+ *  Exports a TLV record to a file set
+ *
+ *  @param record_collection The TLV record to export
+ *  @param kv_pair_output    The output TLV key-value records file
+ *  @param key_index_output  The output key index file
+ *
+ *  @returns zero if succeeded, non-zero if an error condition occurred
+ *
+ *  @remarks More than one set of kv-pairs/key index files can be used to update the same record collection
+ */
+int jp_export_records_to_file_set(jp_TLV_records_t *record_collection,
+                                  FILE             *kv_pair_output,
+                                  FILE             *key_index_output);
+
+/**
+ *  Imports a TLV record from a file set
+ *
+ *  @param record_collection The TLV record collection to append to
+ *  @param kv_pair_input     The input TLV key-value records file
+ *  @param key_index_input   The input key index file
+ *
+ * @returns zero if succeeded, non-zero if an error condition occurred
+ */
+int jp_import_records_from_file_set(jp_TLV_records_t *record_collection,
+                                    FILE             *kv_pair_input,
+                                    FILE             *key_index_input);
+
 
 #endif /* JP_TLV_ENCODER */

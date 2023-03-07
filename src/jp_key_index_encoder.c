@@ -72,7 +72,7 @@ static int jp_buffer_write_key_index_pair(void *rec, const void *key, apr_ssize_
   return 1;
 }
 
-int jp_export_key_array_to_file(apr_hash_t *key_index,
+int jp_export_key_index_to_file(apr_hash_t *key_index,
                                 FILE       *output)
 {
   jp_buffer_io_helper_t helper;
@@ -119,8 +119,8 @@ static int jp_read_io_helper(jp_buffer_io_helper_t* helper, size_t ahead, size_t
   return 0;
 }
 
-apr_hash_t* jp_import_TLV_key_index_from_file(apr_pool_t *pool,
-                                              FILE       *input)
+apr_hash_t* jp_import_key_index_from_file(apr_pool_t *pool,
+                                          FILE       *input)
 {
   jp_buffer_io_helper_t helper;
 
@@ -134,13 +134,13 @@ apr_hash_t* jp_import_TLV_key_index_from_file(apr_pool_t *pool,
   if (read < sizeof(uint64_t))
     return NULL;
 
-  printf("jp_import_TLV_key_index_from_file: pending_pairs_to_read: %ld \n", length);
+  uint64_t pending_pairs_to_read = length;
+  printf("jp_import_TLV_key_index_from_file: pending_pairs_to_read: %ld \n", pending_pairs_to_read);
 
   read       = fread(helper.buffer, 1, JP_IO_HELPER_BUFFER_SIZE, input);
   helper.eof = feof(input);
 
   apr_hash_t* key_index = apr_hash_make(pool);
-  uint64_t pending_pairs_to_read = length;
 
   while(pending_pairs_to_read > 0) {
 

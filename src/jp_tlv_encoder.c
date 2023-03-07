@@ -418,21 +418,6 @@ uint32_t jp_import_kv_pair_from_buffer(      apr_pool_t       *pool,
   return k_read + v_read;
 }
 
-/*
-size_t jp_get_TLV_record_layout_size(jp_TLV_record_t* record)
-{
-  size_t              total    = sizeof(uint32_t);
-  apr_array_header_t* kv_array = record->kv_pairs_array;
-
-  for (int i = 0; i < kv_array->nelts; i++) {
-    jp_TLV_kv_pair_t* elem = & ((jp_TLV_kv_pair_t*)kv_array->elts)[i];
-
-    total += jp_get_TLV_kv_pair_layout_size(elem);
-  }
-
-  return total;
-}*/
-
 
 int jp_add_boolean_kv_pair_to_record(jp_TLV_record_t *record,
                                      size_t           key_index,
@@ -665,14 +650,14 @@ static int json_record_builder_visitor(json_object *jso,
 
 
 int jp_update_records_from_json(apr_pool_t       *pool,
-                                jp_TLV_records_t *records,
+                                jp_TLV_records_t *record_collection,
                                 json_object      *jso)
 {
   jp_TLV_record_builder_t builder;
 
   builder.jso         = jso;
   builder.tlv_record  = jp_TLV_record_make(pool);
-  builder.tlv_records = records;
+  builder.tlv_records = record_collection;
 
   json_c_visit(jso, 0, json_record_builder_visitor, &builder);
 
@@ -680,8 +665,15 @@ int jp_update_records_from_json(apr_pool_t       *pool,
 }
 
 
-int jp_export_record_to_file(jp_TLV_record_t *record,
-                             FILE            *output)
+int jp_export_records_to_file_set(jp_TLV_records_t *record_collection,
+                                  FILE             *kv_pair_output,
+                                  FILE             *key_index_output)
+{
+}
+
+int jp_import_records_from_file_set(jp_TLV_records_t *record_collection,
+                                    FILE             *kv_pair_input,
+                                    FILE             *key_index_input)
 {
 }
 

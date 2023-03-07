@@ -41,7 +41,7 @@ set(LIB_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/include/jp_tlv_encoder.h)
 
 set(LIB_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/jp_tlv_encoder.c
                 ${CMAKE_CURRENT_SOURCE_DIR}/src/jp_tlv_records.c
-                ${CMAKE_CURRENT_SOURCE_DIR}/src/jp_key_array_encoder.c
+                ${CMAKE_CURRENT_SOURCE_DIR}/src/jp_key_index_encoder.c
                 ${CMAKE_CURRENT_SOURCE_DIR}/src/jp_invert_key_index_map.c)
 
 add_library(jp_tlv_encoder ${LIB_SOURCES})

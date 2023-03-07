@@ -16,9 +16,9 @@ jp_process_segment(struct json_tokener *tok,
 }
 
 
-int jp_update_records_from_file(apr_pool_t       *pool,
-                                jp_TLV_records_t *tlv_records,
-                                FILE             *input)
+int jp_update_records_from_json_file(apr_pool_t       *pool,
+                                     jp_TLV_records_t *record_collection,
+                                     FILE             *input)
 {
   #define JP_FREAD_BUFFER_SIZE 4096
 	char                    buffer[JP_FREAD_BUFFER_SIZE];
@@ -60,7 +60,7 @@ int jp_update_records_from_file(apr_pool_t       *pool,
           line_size = 0;
 
           if (next_line_object) {
-            jp_update_records_from_json(pool, tlv_records, next_line_object);
+            jp_update_records_from_json(pool, record_collection, next_line_object);
             json_tokener_reset(tokener);
             json_object_put(next_line_object);
             next_line_object = NULL;

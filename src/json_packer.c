@@ -43,14 +43,22 @@ int main(int                argc,
   atexit(apr_terminate);
 
   const char* inputfile       = (argc > 1) ? argv[1] : NULL;
-  const char* keyarrayoutfile = (argc > 2) ? argv[2] : NULL;
+  const char* keyarrayoutfile = (argc > 2) ? argv[2] : "key_array.bin";
+  const char* kvpairoutfile   = (argc > 3) ? argv[3] : "kv_pair.bin";
 
   apr_pool_create(&p, NULL);
 
   jp_TLV_records_t* tlv_records = jp_TLV_record_collection_make(p);
 
+  if (NULL == inputfile) {
+    fprintf(stderr, "No input JSON file\n");
+
+    rv = -1;
+    goto terminate;
+  }
+
   FILE* input = open_filename(inputfile, "r", 1);
-  jp_update_records_from_file(p, tlv_records, input);
+  jp_update_records_from_json_file(p, tlv_records, input);
 
   apr_hash_t* key_index = tlv_records->key_index;
   apr_hash_t* index_key = jp_build_index_2_key_from_key_index(key_index);
@@ -67,12 +75,12 @@ int main(int                argc,
 
   if (keyarrayoutfile) {
     FILE* out = open_filename(keyarrayoutfile, "wb", 0);
-    jp_export_key_array_to_file(key_index, out);
+    jp_export_key_index_to_file(key_index, out);
 
     close_filename(keyarrayoutfile, out);
 
     FILE* readkeyarrayfile = open_filename(keyarrayoutfile, "rb", 1);
-    apr_hash_t* key_index_from_file = jp_import_TLV_key_index_from_file(p, readkeyarrayfile);
+    apr_hash_t* key_index_from_file = jp_import_key_index_from_file(p, readkeyarrayfile);
 
     if (NULL == key_index_from_file) {
       printf("errors reading %s\n", keyarrayoutfile);
@@ -88,6 +96,12 @@ int main(int                argc,
     }
   }
 
+  if (kvpairoutfile) {
+    FILE* out = open_filename(kvpairoutfile, "wb", 0);
+
+  }
+
+  terminate:
   apr_terminate();
   return rv;
 };
