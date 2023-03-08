@@ -72,6 +72,7 @@ jp_TLV_records_t* jp_TLV_record_collection_make(apr_pool_t *pool);
  */
 jp_TLV_record_t* jp_TLV_record_make(apr_pool_t *pool);
 
+
 /**
  * Adds an existing record to a collection
  *
@@ -86,12 +87,12 @@ int jp_add_record_to_TLV_collection(jp_TLV_records_t *record_collection,
 /**
  * Finds or adds the position of a key in the records
  *
- * @param records The TLV encoded records
- * @param key     The key to retrieve
+ * @param key_index The hash that maps string keys to indices
+ * @param key       The key to retrieve
  *
  * @returns The index of the key in the records
  */
-size_t jp_find_or_add_key(jp_TLV_records_t *records,
+size_t jp_find_or_add_key(apr_hash_t       *key_index,
                           const char*       key);
 
 /**
@@ -283,14 +284,13 @@ apr_hash_t* jp_import_key_index_from_file(apr_pool_t *pool,
 
 
 /**
- *  Builds The inverse index key map from a key index map
+ *  Builds The inverse key array from a key index map
  *
- *  @param input The TLV key index
+ *  @param input The key index
  *
- * @returns A TLV index map
+ * @returns A key array
  */
-apr_hash_t* jp_build_index_2_key_from_key_index(apr_hash_t* key_index);
-
+apr_array_header_t* jp_build_key_array_from_key_index(apr_hash_t* key_index);
 
 /**
  * Incrementally updates the TLV records from an input JSON file
@@ -316,12 +316,11 @@ int jp_update_records_from_json_file(apr_pool_t       *pool,
  *  @param key_index_output  The output key index file
  *
  *  @returns zero if succeeded, non-zero if an error condition occurred
- *
- *  @remarks More than one set of kv-pairs/key index files can be used to update the same record collection
  */
 int jp_export_records_to_file_set(jp_TLV_records_t *record_collection,
                                   FILE             *kv_pair_output,
                                   FILE             *key_index_output);
+
 
 /**
  *  Imports a TLV record from a file set
@@ -331,6 +330,8 @@ int jp_export_records_to_file_set(jp_TLV_records_t *record_collection,
  *  @param key_index_input   The input key index file
  *
  * @returns zero if succeeded, non-zero if an error condition occurred
+ *
+ * @remarks More than one set of kv-pairs/key index files can be used to update the same record collection
  */
 int jp_import_records_from_file_set(jp_TLV_records_t *record_collection,
                                     FILE             *kv_pair_input,

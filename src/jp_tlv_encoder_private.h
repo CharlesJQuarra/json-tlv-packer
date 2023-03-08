@@ -13,19 +13,32 @@ typedef struct jp_buffer_io
   int         eof;
   FILE       *stream;
   apr_pool_t *pool;
+  int         read_mode;
 
 } jp_buffer_io_t;
 
 /**
- * Initializes an instance of the I/O buffer
+ * Initializes an instance of the I/O buffer for reading
  *
  * @param buffer  A pointer to the buffer
  * @param pool    A memory pool
- * @param file    An I/O file stream
+ * @param file    An input file stream
  */
-void jp_buffer_io_initialize(jp_buffer_io_t *buffer,
-                             apr_pool_t     *pool,
-                             FILE           *file);
+void jp_buffer_io_read_initialize(jp_buffer_io_t *buffer,
+                                  apr_pool_t     *pool,
+                                  FILE           *file);
+
+/**
+ * Initializes an instance of the I/O buffer for writing
+ *
+ * @param buffer  A pointer to the buffer
+ * @param pool    A memory pool
+ * @param file    An output file stream
+ */
+void jp_buffer_io_write_initialize(jp_buffer_io_t *buffer,
+                                   apr_pool_t     *pool,
+                                   FILE           *file);
+
 
 /**
  * Initializes an instance I/O buffer pointing to static memory

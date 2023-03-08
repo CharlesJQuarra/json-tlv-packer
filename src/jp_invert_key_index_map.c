@@ -3,25 +3,19 @@
 
 #include "jp_tlv_encoder.h"
 
-
-static int jp_invert_key_index_iterate(void *rec, const void *key, apr_ssize_t klen, const void *value)
+apr_array_header_t* jp_build_key_array_from_key_index(apr_hash_t* key_index)
 {
-  apr_hash_t* index_key = rec;
-  printf("jp_invert_key_index_iterate: key %s -> val %ld \n", (const char*)key, (size_t)value);
-  apr_hash_set(index_key, value, sizeof(size_t), key);
-  return 1;
-}
+  unsigned int nb_elems = apr_hash_count(key_index);
+  apr_array_header_t* key_array = apr_array_make(apr_hash_pool_get(key_index), nb_elems, sizeof(const char**));
 
-static unsigned int jp_index_key_hash(const char *key, apr_ssize_t *klen)
-{
-  return (unsigned int)key;
-}
+  for (apr_hash_index_t *hi = apr_hash_first(NULL, key_index); hi; hi = apr_hash_next(hi)) {
+      size_t      v;
+      const char *k;
 
-apr_hash_t* jp_build_index_2_key_from_key_index(apr_hash_t* key_index)
-{
-  apr_hash_t* index_key = apr_hash_make_custom(apr_hash_pool_get(key_index), jp_index_key_hash);
+      apr_hash_this(hi, (const void**)&k, NULL, (void**)&v);
+      const char** key_slot = & ((const char**) key_array->elts)[v - 1];
+      *key_slot = k;
+  }
 
-  apr_hash_do(jp_invert_key_index_iterate, index_key, key_index);
-
-  return index_key;
+  return key_array;
 }

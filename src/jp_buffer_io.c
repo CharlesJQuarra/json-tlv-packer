@@ -4,9 +4,7 @@
 #include "jp_tlv_encoder_private.h"
 
 
-
-void
-jp_buffer_io_initialize(jp_buffer_io_t* buffer, apr_pool_t *pool, FILE* file)
+static void jp_buffer_io_initialize(jp_buffer_io_t* buffer, apr_pool_t *pool, FILE* file, int read_mode)
 {
   buffer->used           = 0;
   buffer->read           = 0;
@@ -14,6 +12,19 @@ jp_buffer_io_initialize(jp_buffer_io_t* buffer, apr_pool_t *pool, FILE* file)
   buffer->current_size   = JP_IO_HELPER_BUFFER_SIZE;
   buffer->stream         = file;
   buffer->pool           = pool;
+  buffer->read_mode      = read_mode;
+}
+
+void
+jp_buffer_io_read_initialize(jp_buffer_io_t* buffer, apr_pool_t *pool, FILE* file)
+{
+  jp_buffer_io_initialize(buffer, pool, file, 1);
+}
+
+void
+jp_buffer_io_write_initialize(jp_buffer_io_t* buffer, apr_pool_t *pool, FILE* file)
+{
+  jp_buffer_io_initialize(buffer, pool, file, 0);
 }
 
 void
@@ -25,6 +36,7 @@ jp_buffer_io_initialize_static(jp_buffer_io_t *buffer, uint8_t* memory, size_t s
   buffer->current_size   = (NULL == memory) ? JP_IO_HELPER_BUFFER_SIZE : size;
   buffer->stream         = NULL;
   buffer->pool           = NULL;
+  buffer->read_mode      = 0;
 }
 
 int
@@ -43,7 +55,13 @@ jp_buffer_io_grow(jp_buffer_io_t* buffer, size_t not_less_than)
   if (NULL == new_buffer)
     return -1;
 
-  memcpy(new_buffer, buffer->current_buffer, buffer->used);
+  size_t cpy_to_offset = 0;
+  if (buffer->read_mode)
+    cpy_to_offset = buffer->read;
+  else
+    cpy_to_offset = buffer->used;
+
+  memcpy(new_buffer, buffer->current_buffer, cpy_to_offset);
   buffer->current_buffer = new_buffer;
   buffer->current_size   = new_size;
 
@@ -60,6 +78,9 @@ uint8_t* jp_buffer_io_use_available_bytes(jp_buffer_io_t *buffer,
 
     return ret;
   }
+
+  fprintf(stderr, "jp_buffer_io_use_available_bytes: trying to consume %ld bytes, but only %ld available \n",size, buffer->current_size - buffer->used);
+  fprintf(stderr, "jp_buffer_io_use_available_bytes: buffer size: %ld. used: %ld. Returning NULL \n", buffer->current_size, buffer->used);
 
   return NULL;
 }
@@ -123,11 +144,12 @@ jp_buffer_io_read(jp_buffer_io_t* buffer)
   if (leftover_read < 0)
     return -1;
 
-  if (leftover_read > 0)
+  if (leftover_read > 0) {
     memmove(buffer->current_buffer, buffer->current_buffer + buffer->used, leftover_read);
+  }
 
   if (buffer->stream) {
-    buffer->read = fread(buffer->current_buffer + leftover_read, 1, buffer->current_size, buffer->stream);
+    buffer->read = leftover_read + fread(buffer->current_buffer + leftover_read, 1, buffer->current_size, buffer->stream);
     buffer->eof  = feof(buffer->stream);
   }
   else return -1;

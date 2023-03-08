@@ -1,0 +1,3 @@
+{ "a" : 123 }
+{ "b": "afpp" , "ab" : "fpp", "a" : "foo" }
+{ "foo": true, "ab" : -12 }

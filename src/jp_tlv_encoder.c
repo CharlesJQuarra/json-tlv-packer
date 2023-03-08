@@ -42,16 +42,16 @@ int jp_add_record_to_TLV_collection(jp_TLV_records_t *record_collection,
 }
 
 
-size_t jp_find_or_add_key(jp_TLV_records_t *records,
+size_t jp_find_or_add_key(apr_hash_t       *key_index,
                           const char*       key)
 {
-  void* index_as_ptr = apr_hash_get(records->key_index, key, APR_HASH_KEY_STRING);
+  void* index_as_ptr = apr_hash_get(key_index, key, APR_HASH_KEY_STRING);
 
   if (NULL == index_as_ptr) {
-    size_t      next_pos = apr_hash_count(records->key_index) + 1;
-    apr_pool_t* pool     = apr_hash_pool_get(records->key_index);
+    size_t      next_pos = apr_hash_count(key_index) + 1;
+    apr_pool_t* pool     = apr_hash_pool_get(key_index);
     const char* key_copy = apr_pmemdup(pool, key, strlen(key) + 1);
-    apr_hash_set(records->key_index, key_copy, APR_HASH_KEY_STRING, (void*)next_pos);
+    apr_hash_set(key_index, key_copy, APR_HASH_KEY_STRING, (void*)next_pos);
 
     return next_pos;
   }
@@ -74,7 +74,6 @@ uint32_t jp_import_uint32_from_buffer(uint32_t       *value,
 {
   if (jp_buffer_io_bytes_left_to_read(buffer) < sizeof(uint32_t)) {
     if (0 != jp_buffer_io_read(buffer)) {
-      printf("jp_import_uint32_from_buffer: bytes left to read: %d \n", jp_buffer_io_bytes_left_to_read(buffer));
       return 0;
     }
   }
@@ -217,7 +216,6 @@ uint32_t jp_export_value_union_to_buffer(const jp_TLV_union_t *union_value,
       if (jp_buffer_io_bytes_left_to_write(buffer) < sizeof(int32_t))
         jp_buffer_io_flush_writes(buffer);
 
-      //memcpy(buffer + 1, & integer_value, sizeof(int32_t));
       jp_buffer_io_memcpy_to(buffer, & integer_value, sizeof(int32_t));
       written += sizeof(int32_t);
     }
@@ -234,7 +232,6 @@ uint32_t jp_export_value_union_to_buffer(const jp_TLV_union_t *union_value,
     if (jp_buffer_io_bytes_left_to_write(buffer) < sizeof(double))
       jp_buffer_io_flush_writes(buffer);
 
-    //memcpy(buffer + 1, & double_value, sizeof(double));
     jp_buffer_io_memcpy_to(buffer, & double_value, sizeof(double));
     written += sizeof(double);
 
@@ -258,7 +255,6 @@ uint32_t jp_export_value_union_to_buffer(const jp_TLV_union_t *union_value,
       if (jp_buffer_io_bytes_left_to_write(buffer) < sizeof(uint32_t))
         jp_buffer_io_flush_writes(buffer);
 
-      //memcpy(buffer + 1, & string_value->value_length, sizeof(uint32_t));
       jp_buffer_io_memcpy_to(buffer, & string_value->value_length, sizeof(uint32_t));
       written += sizeof(uint32_t);
     }
@@ -273,7 +269,6 @@ uint32_t jp_export_value_union_to_buffer(const jp_TLV_union_t *union_value,
     if (jp_buffer_io_bytes_left_to_write(buffer) < string_value->value_length)
       jp_buffer_io_flush_writes(buffer);
 
-    //memcpy(buffer + written, string_value->value_buffer, string_value->value_length);
     jp_buffer_io_memcpy_to(buffer, string_value->value_buffer, string_value->value_length);
     written += string_value->value_length;
 
@@ -283,9 +278,6 @@ uint32_t jp_export_value_union_to_buffer(const jp_TLV_union_t *union_value,
     written = 0;
     break;
   }
-
-  //printf("jp_export_kv_pair_to_buffer: required bytes: %d written bytes: %d \n", required, written);
-  //printf("jp_export_kv_pair_to_buffer: descriptor byte %d \n", descriptor_byte);
 
   return written;
 }
@@ -299,7 +291,6 @@ uint32_t jp_import_value_union_from_buffer(apr_pool_t     *pool,
     jp_buffer_io_read(buffer);
 
   uint8_t descriptor_byte;
-  //memcpy(& descriptor_byte, buffer, 1);
   jp_buffer_io_memcpy_from(buffer, & descriptor_byte, 1);
 
   uint32_t read     = 1;
@@ -386,9 +377,6 @@ uint32_t jp_import_value_union_from_buffer(apr_pool_t     *pool,
     read = 0;
     break;
   }
-
-  //printf("jp_import_kv_pair_from_buffer: required bytes: %d read bytes: %d \n", required, read);
-  //printf("jp_import_kv_pair_from_buffer: descriptor byte %d \n", descriptor_byte);
 
   return read;
 }
@@ -540,15 +528,10 @@ uint32_t jp_import_kv_pair_from_buffer(apr_pool_t       *pool,
   if (0 == k_read)
     return 0;
 
-  printf("jp_import_kv_pair_from_buffer: read index %d \n", kv_pair->key_index);
-
   uint32_t v_read = jp_import_value_union_from_buffer(pool, & kv_pair->union_v, & kv_pair->value_type, buffer);
 
   if (0 == v_read)
     return 0;
-
-  printf("jp_import_kv_pair_from_buffer: read value type %d \n", kv_pair->value_type);
-
 
   return k_read + v_read;
 }
@@ -651,7 +634,7 @@ typedef struct jp_TLV_record_builder
 
   const json_object *jso;
   jp_TLV_record_t   *tlv_record;
-  jp_TLV_records_t  *tlv_records;
+  apr_hash_t        *key_index;
 
 } jp_TLV_record_builder_t;
 
@@ -666,17 +649,10 @@ static int json_record_builder_visitor(json_object *jso,
     jp_TLV_record_builder_t* builder = userarg;
     enum json_type           type    = json_object_get_type(jso);
 
-    printf("json_visitor 0; flags: 0x%x, type: %d  key: %s, index: %ld, value: %s\n", flags, type,
-	       (jso_key ? jso_key : "(null)"), (jso_index ? (long)*jso_index : -1L),
-	       json_object_to_json_string(jso));
-
     if (flags == JSON_C_VISIT_SECOND || parent_jso != builder->jso || jso_key == NULL)
       return JSON_C_VISIT_RETURN_CONTINUE;
 
-    size_t key_index = jp_find_or_add_key(builder->tlv_records, jso_key);
-
-    printf("json_visitor 1; flags: 0x%x, type: %d  key: %s, index of key: %ld, value: %s\n", flags, type,
-	       (jso_key ? jso_key : "(null)"), key_index, json_object_to_json_string(jso));
+    size_t key_index = jp_find_or_add_key(builder->key_index, jso_key);
 
     switch (type) {
 
@@ -709,9 +685,10 @@ int jp_update_records_from_json(apr_pool_t       *pool,
 
   builder.jso         = jso;
   builder.tlv_record  = jp_TLV_record_make(pool);
-  builder.tlv_records = record_collection;
+  builder.key_index   = record_collection->key_index;
 
-  json_c_visit(jso, 0, json_record_builder_visitor, &builder);
+  json_c_visit(jso, 0, json_record_builder_visitor, & builder);
+  jp_add_record_to_TLV_collection(record_collection, builder.tlv_record);
 
   return 0;
 }
