@@ -73,7 +73,7 @@ void test_kv_encoding(const jp_TLV_record_t* record, char *out_buffer, size_t bu
     jp_TLV_kv_pair_t* elem = & ((jp_TLV_kv_pair_t*)kv_array->elts)[i];
 
     ck_assert_msg(buffer_size > written, "buffer size too small");
-    uint32_t new_written = jp_export_kv_pair_to_buffer(elem, out_buffer + written, buffer_size - written);
+    uint32_t new_written = jp_export_kv_pair_to_static_buffer(elem, out_buffer + written, buffer_size - written);
 
     ck_assert_msg (new_written > 0, "unable to write a kv pair to buffer");
 
@@ -87,7 +87,7 @@ void test_kv_encoding(const jp_TLV_record_t* record, char *out_buffer, size_t bu
     //memset(& imported_elem, 0, sizeof(jp_TLV_kv_pair_t));
 
     ck_assert_msg(buffer_size > read, "buffer size too small");
-    uint32_t new_read = jp_import_kv_pair_from_buffer(pool, & imported_elem, out_buffer + read, buffer_size - read);
+    uint32_t new_read = jp_import_kv_pair_from_static_buffer(pool, & imported_elem, out_buffer + read, buffer_size - read);
 
     ck_assert_msg (new_read > 0, "unable to read a kv pair from buffer");
 
@@ -251,8 +251,8 @@ START_TEST(test_TLV_record_export_import)
 
   printf("test_TLV_record_export_import: encoded 3rd value: %d\n", value3);
 
-  uint32_t written = jp_export_record_to_buffer(record, out_buffer, BUFFER_SIZE);
-  uint32_t read    = jp_import_record_from_buffer(pool, & imported_record, out_buffer, BUFFER_SIZE);
+  uint32_t written = jp_export_record_to_static_buffer(record, out_buffer, BUFFER_SIZE);
+  uint32_t read    = jp_import_record_from_static_buffer(pool, & imported_record, out_buffer, BUFFER_SIZE);
 
   ck_assert_msg( 0 == compare_records(record, imported_record), "records do not match");
 }

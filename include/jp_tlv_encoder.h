@@ -203,7 +203,7 @@ int jp_update_records_from_json(apr_pool_t       *pool,
                                 json_object      *jso);
 
 /**
- *  Exports a TLV record key-value pair to a buffer
+ *  Exports a TLV record key-value pair to a static buffer
  *
  *  @param kv_pair     The key-value pair to export
  *  @param buffer      The output buffer
@@ -211,12 +211,12 @@ int jp_update_records_from_json(apr_pool_t       *pool,
  *
  * @returns bytes written to the buffer, 0 if the buffer_size was too small
  */
-uint32_t jp_export_kv_pair_to_buffer(jp_TLV_kv_pair_t *kv_pair,
-                                     uint8_t          *buffer,
-                                     size_t            buffer_size);
+uint32_t jp_export_kv_pair_to_static_buffer(jp_TLV_kv_pair_t *kv_pair,
+                                            uint8_t          *buffer,
+                                            size_t            buffer_size);
 
 /**
- *  Imports a TLV record key-value pair from a buffer
+ *  Imports a TLV record key-value pair from a static buffer
  *
  *  @param pool        A memory pool
  *  @param kv_pair     The key-value pair to import
@@ -225,13 +225,13 @@ uint32_t jp_export_kv_pair_to_buffer(jp_TLV_kv_pair_t *kv_pair,
  *
  * @returns bytes read from the buffer, 0 if the buffer_size was too small
  */
-uint32_t jp_import_kv_pair_from_buffer(      apr_pool_t       *pool,
-                                             jp_TLV_kv_pair_t *kv_pair,
-                                       const uint8_t          *buffer,
-                                             size_t            buffer_size);
+uint32_t jp_import_kv_pair_from_static_buffer(apr_pool_t       *pool,
+                                              jp_TLV_kv_pair_t *kv_pair,
+                                              uint8_t          *buffer,
+                                              size_t            buffer_size);
 
 /**
- *  Exports a TLV record to a buffer
+ *  Exports a TLV record to a static buffer
  *
  *  @param record      The TLV record to export
  *  @param buffer      The output buffer
@@ -239,12 +239,12 @@ uint32_t jp_import_kv_pair_from_buffer(      apr_pool_t       *pool,
  *
  * @returns bytes written to the buffer, 0 if the buffer_size was too small
  */
-uint32_t jp_export_record_to_buffer(const jp_TLV_record_t *record,
-                                          uint8_t         *buffer,
-                                          size_t           buffer_size);
+uint32_t jp_export_record_to_static_buffer(const jp_TLV_record_t *record,
+                                                 uint8_t         *buffer,
+                                                 size_t           buffer_size);
 
 /**
- *  Imports a TLV record from a buffer
+ *  Imports a TLV record from a static buffer
  *
  *  @param pool        A memory pool
  *  @param record      The TLV record to write
@@ -253,10 +253,10 @@ uint32_t jp_export_record_to_buffer(const jp_TLV_record_t *record,
  *
  * @returns bytes read from the buffer, 0 if the buffer_size was too small
  */
-uint32_t jp_import_record_from_buffer(      apr_pool_t       *pool,
-                                            jp_TLV_record_t **record,
-                                      const uint8_t          *buffer,
-                                            size_t            buffer_size);
+uint32_t jp_import_record_from_static_buffer(apr_pool_t       *pool,
+                                             jp_TLV_record_t **record,
+                                             uint8_t          *buffer,
+                                             size_t            buffer_size);
 
 
 /**

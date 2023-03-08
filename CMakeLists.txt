@@ -43,7 +43,8 @@ set(LIB_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/jp_tlv_encoder.c
                 ${CMAKE_CURRENT_SOURCE_DIR}/src/jp_json_reader.c
                 ${CMAKE_CURRENT_SOURCE_DIR}/src/jp_key_index_encoder.c
                 ${CMAKE_CURRENT_SOURCE_DIR}/src/jp_buffer_io.c
-                ${CMAKE_CURRENT_SOURCE_DIR}/src/jp_invert_key_index_map.c)
+                ${CMAKE_CURRENT_SOURCE_DIR}/src/jp_invert_key_index_map.c
+                ${CMAKE_CURRENT_SOURCE_DIR}/src/jp_tlv_file_writers.c)
 
 add_library(jp_tlv_encoder ${LIB_SOURCES})
 #target_link_libraries(jp_tlv_encoder PUBLIC $<$<LINK_LANGUAGE:C>:libapr> $<$<LINK_LANGUAGE:C>:json-c>)

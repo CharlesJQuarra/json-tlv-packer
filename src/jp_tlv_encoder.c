@@ -59,25 +59,27 @@ size_t jp_find_or_add_key(jp_TLV_records_t *records,
   return (size_t)index_as_ptr;
 }
 
-uint32_t jp_export_uint32_to_buffer(uint32_t value,
-                                    uint8_t *buffer,
-                                    size_t   buffer_size)
+uint32_t jp_export_uint32_to_buffer(uint32_t        value,
+                                    jp_buffer_io_t *buffer)
 {
-  if (buffer_size < sizeof(uint32_t))
-    return 0;
+  if (jp_buffer_io_bytes_left_to_write(buffer) < sizeof(uint32_t))
+    jp_buffer_io_flush_writes(buffer);
 
-  memcpy(buffer, & value, sizeof(uint32_t));
+  jp_buffer_io_memcpy_to(buffer, & value, sizeof(uint32_t));
   return sizeof(uint32_t);
 }
 
-uint32_t jp_import_uint32_from_buffer(      uint32_t *value,
-                                      const uint8_t  *buffer,
-                                            size_t    buffer_size)
+uint32_t jp_import_uint32_from_buffer(uint32_t       *value,
+                                      jp_buffer_io_t *buffer)
 {
-  if (buffer_size < sizeof(uint32_t))
-    return 0;
+  if (jp_buffer_io_bytes_left_to_read(buffer) < sizeof(uint32_t)) {
+    if (0 != jp_buffer_io_read(buffer)) {
+      printf("jp_import_uint32_from_buffer: bytes left to read: %d \n", jp_buffer_io_bytes_left_to_read(buffer));
+      return 0;
+    }
+  }
 
-  memcpy(value, buffer, sizeof(uint32_t));
+  jp_buffer_io_memcpy_from(buffer, value, sizeof(uint32_t));
   return sizeof(uint32_t);
 }
 
@@ -175,11 +177,10 @@ set_extra_bits(uint8_t* byte, uint32_t value)
 
 uint32_t jp_export_value_union_to_buffer(const jp_TLV_union_t *union_value,
                                                uint32_t        value_type,
-                                               uint8_t        *buffer,
-                                               size_t          buffer_size)
+                                               jp_buffer_io_t *buffer)
 {
-  if (buffer_size < 1)
-    return 0;
+  if (jp_buffer_io_bytes_left_to_write(buffer) < 1)
+    jp_buffer_io_flush_writes(buffer);
 
   uint8_t descriptor_byte = 0;
   set_type_bits(& descriptor_byte, value_type);
@@ -194,7 +195,8 @@ uint32_t jp_export_value_union_to_buffer(const jp_TLV_union_t *union_value,
   switch(value_type) {
     case JP_TYPE_BOOLEAN:
 
-    set_extra_bits(&descriptor_byte, !! union_value->integer_value);
+    set_extra_bits(& descriptor_byte, !! union_value->integer_value);
+    jp_buffer_io_memcpy_to(buffer, & descriptor_byte, sizeof(uint8_t));
 
     break;
 
@@ -203,18 +205,20 @@ uint32_t jp_export_value_union_to_buffer(const jp_TLV_union_t *union_value,
     integer_value = union_value->integer_value;
     will_fit      = (((int32_t)(integer_value & EXTRA_BITS_MASK)) == integer_value);
     set_will_fit_bit(& descriptor_byte, will_fit);
-    if (will_fit)
+
+    if (will_fit) {
       set_extra_bits(& descriptor_byte, integer_value);
-    else
-    {
+      jp_buffer_io_memcpy_to(buffer, & descriptor_byte, sizeof(uint8_t));
+    } else {
+      jp_buffer_io_memcpy_to(buffer, & descriptor_byte, sizeof(uint8_t));
+
       required += sizeof(int32_t);
 
-      if (buffer_size < (1 + sizeof(int32_t))){
-        written = 0;
-        break;
-      }
+      if (jp_buffer_io_bytes_left_to_write(buffer) < sizeof(int32_t))
+        jp_buffer_io_flush_writes(buffer);
 
-      memcpy(buffer + 1, & integer_value, sizeof(int32_t));
+      //memcpy(buffer + 1, & integer_value, sizeof(int32_t));
+      jp_buffer_io_memcpy_to(buffer, & integer_value, sizeof(int32_t));
       written += sizeof(int32_t);
     }
 
@@ -222,15 +226,16 @@ uint32_t jp_export_value_union_to_buffer(const jp_TLV_union_t *union_value,
 
     case JP_TYPE_DOUBLE:
 
+    jp_buffer_io_memcpy_to(buffer, & descriptor_byte, sizeof(uint8_t));
+
     required    += sizeof(double);
     double_value = union_value->double_value;
 
-    if (buffer_size < (1 + sizeof(double))) {
-      written = 0;
-      break;
-    }
+    if (jp_buffer_io_bytes_left_to_write(buffer) < sizeof(double))
+      jp_buffer_io_flush_writes(buffer);
 
-    memcpy(buffer + 1, & double_value, sizeof(double));
+    //memcpy(buffer + 1, & double_value, sizeof(double));
+    jp_buffer_io_memcpy_to(buffer, & double_value, sizeof(double));
     written += sizeof(double);
 
     break;
@@ -241,26 +246,35 @@ uint32_t jp_export_value_union_to_buffer(const jp_TLV_union_t *union_value,
     required    += string_value->value_length;
     will_fit     = (((uint32_t)(string_value->value_length & EXTRA_BITS_MASK)) == string_value->value_length);
     set_will_fit_bit(&descriptor_byte, will_fit);
+
     if (will_fit) {
-      set_extra_bits(&descriptor_byte, string_value->value_length);
+      set_extra_bits(& descriptor_byte, string_value->value_length);
+      jp_buffer_io_memcpy_to(buffer, & descriptor_byte, sizeof(uint8_t));
     } else {
+      jp_buffer_io_memcpy_to(buffer, & descriptor_byte, sizeof(uint8_t));
+
       required += sizeof(uint32_t);
 
-      if (buffer_size < (1 + sizeof(uint32_t))) {
-        written = 0;
-        break;
-      }
+      if (jp_buffer_io_bytes_left_to_write(buffer) < sizeof(uint32_t))
+        jp_buffer_io_flush_writes(buffer);
 
-      memcpy(buffer + 1, & string_value->value_length, sizeof(uint32_t));
+      //memcpy(buffer + 1, & string_value->value_length, sizeof(uint32_t));
+      jp_buffer_io_memcpy_to(buffer, & string_value->value_length, sizeof(uint32_t));
       written += sizeof(uint32_t);
     }
 
-    if (buffer_size < written + string_value->value_length) {
-      written = 0;
-      break;
+    if (buffer->current_size < string_value->value_length) {
+      if (0 != jp_buffer_io_grow(buffer, string_value->value_length)) {
+        written = 0;
+        break;
+      }
     }
 
-    memcpy(buffer + written, string_value->value_buffer, string_value->value_length);
+    if (jp_buffer_io_bytes_left_to_write(buffer) < string_value->value_length)
+      jp_buffer_io_flush_writes(buffer);
+
+    //memcpy(buffer + written, string_value->value_buffer, string_value->value_length);
+    jp_buffer_io_memcpy_to(buffer, string_value->value_buffer, string_value->value_length);
     written += string_value->value_length;
 
     break;
@@ -270,26 +284,23 @@ uint32_t jp_export_value_union_to_buffer(const jp_TLV_union_t *union_value,
     break;
   }
 
-  if (written > 0)
-    memcpy(buffer, & descriptor_byte, 1);
-
   //printf("jp_export_kv_pair_to_buffer: required bytes: %d written bytes: %d \n", required, written);
   //printf("jp_export_kv_pair_to_buffer: descriptor byte %d \n", descriptor_byte);
 
   return written;
 }
 
-uint32_t jp_import_value_union_from_buffer(      apr_pool_t     *pool,
-                                                 jp_TLV_union_t *union_value,
-                                                 uint32_t       *value_type,
-                                           const uint8_t        *buffer,
-                                                 size_t          buffer_size)
+uint32_t jp_import_value_union_from_buffer(apr_pool_t     *pool,
+                                           jp_TLV_union_t *union_value,
+                                           uint32_t       *value_type,
+                                           jp_buffer_io_t *buffer)
 {
-  if (buffer_size < 1)
-    return 0;
+  if (jp_buffer_io_bytes_left_to_read(buffer) < 1)
+    jp_buffer_io_read(buffer);
 
   uint8_t descriptor_byte;
-  memcpy(& descriptor_byte, buffer, 1);
+  //memcpy(& descriptor_byte, buffer, 1);
+  jp_buffer_io_memcpy_from(buffer, & descriptor_byte, 1);
 
   uint32_t read     = 1;
   uint32_t required = 1;
@@ -313,12 +324,11 @@ uint32_t jp_import_value_union_from_buffer(      apr_pool_t     *pool,
     {
       required += sizeof(int32_t);
 
-      if (buffer_size < (read + sizeof(int32_t))) {
-        read = 0;
-        break;
-      }
+      if (jp_buffer_io_bytes_left_to_read(buffer) < sizeof(int32_t))
+        jp_buffer_io_read(buffer);
 
-      memcpy(& union_value->integer_value, buffer + read, sizeof(int32_t));
+      //memcpy(& union_value->integer_value, buffer + read, sizeof(int32_t));
+      jp_buffer_io_memcpy_from(buffer, & union_value->integer_value, sizeof(int32_t));
       read += sizeof(int32_t);
     }
 
@@ -328,12 +338,11 @@ uint32_t jp_import_value_union_from_buffer(      apr_pool_t     *pool,
 
     required += sizeof(double);
 
-    if (buffer_size < (read + sizeof(double))) {
-      read = 0;
-      break;
-    }
+    if (jp_buffer_io_bytes_left_to_read(buffer) < sizeof(double))
+      jp_buffer_io_read(buffer);
 
-    memcpy(& union_value->double_value, buffer + read, sizeof(double));
+    //memcpy(& union_value->double_value, buffer + read, sizeof(double));
+    jp_buffer_io_memcpy_from(buffer, & union_value->double_value, sizeof(double));
     read += sizeof(double);
 
     break;
@@ -347,22 +356,27 @@ uint32_t jp_import_value_union_from_buffer(      apr_pool_t     *pool,
     } else {
       required += sizeof(uint32_t);
 
-      if (buffer_size < (read + sizeof(uint32_t))) {
-        read = 0;
-        break;
-      }
+      if (jp_buffer_io_bytes_left_to_read(buffer) < sizeof(uint32_t))
+        jp_buffer_io_read(buffer);
 
-      memcpy(& string_value->value_length, buffer + read, sizeof(uint32_t));
+      //memcpy(& string_value->value_length, buffer + read, sizeof(uint32_t));
+      jp_buffer_io_memcpy_from(buffer, & string_value->value_length, sizeof(uint32_t));
       read += sizeof(uint32_t);
     }
 
     required += string_value->value_length;
-    if (buffer_size < read + string_value->value_length) {
-      read = 0;
-      break;
+
+    if (buffer->current_size < string_value->value_length) {
+      if (0 != jp_buffer_io_grow(buffer, string_value->value_length)) {
+        read = 0;
+        break;
+      }
     }
 
-    string_value->value_buffer = apr_pmemdup(pool, buffer + read, string_value->value_length + 1);
+    if (jp_buffer_io_bytes_left_to_read(buffer) < string_value->value_length)
+        jp_buffer_io_read(buffer);
+
+    string_value->value_buffer = apr_pmemdup(pool, jp_buffer_io_use_available_bytes(buffer, string_value->value_length), string_value->value_length + 1);
     string_value->value_buffer[string_value->value_length] = '\0';
     read += string_value->value_length;
 
@@ -381,42 +395,6 @@ uint32_t jp_import_value_union_from_buffer(      apr_pool_t     *pool,
 
 #undef EXTRA_BITS_MASK
 #undef EXTRA_BITS_MASK_C
-
-
-uint32_t jp_export_kv_pair_to_buffer(jp_TLV_kv_pair_t *kv_pair,
-                                     uint8_t          *buffer,
-                                     size_t            buffer_size)
-{
-  uint32_t k_written = jp_export_uint32_to_buffer(kv_pair->key_index, buffer, buffer_size);
-
-  if (0 == k_written)
-    return 0;
-
-  uint32_t v_written = jp_export_value_union_to_buffer(& kv_pair->union_v, kv_pair->value_type, buffer + k_written, buffer_size - k_written);
-
-  if (0 == v_written)
-    return 0;
-
-  return k_written + v_written;
-}
-
-uint32_t jp_import_kv_pair_from_buffer(      apr_pool_t       *pool,
-                                             jp_TLV_kv_pair_t *kv_pair,
-                                       const uint8_t          *buffer,
-                                             size_t            buffer_size)
-{
-  uint32_t k_read = jp_import_uint32_from_buffer(& kv_pair->key_index, buffer, buffer_size);
-
-  if (0 == k_read)
-    return 0;
-
-  uint32_t v_read = jp_import_value_union_from_buffer(pool, & kv_pair->union_v, & kv_pair->value_type, buffer + k_read, buffer_size - k_read);
-
-  if (0 == v_read)
-    return 0;
-
-  return k_read + v_read;
-}
 
 
 int jp_add_boolean_kv_pair_to_record(jp_TLV_record_t *record,
@@ -526,15 +504,75 @@ int jp_read_double_from_kv_pair(const jp_TLV_kv_pair_t *kv_pair,
   return 0;
 }
 
+
+uint32_t jp_export_kv_pair_to_buffer(jp_TLV_kv_pair_t *kv_pair,
+                                     jp_buffer_io_t   *buffer)
+{
+  uint32_t k_written = jp_export_uint32_to_buffer(kv_pair->key_index, buffer);
+
+  if (0 == k_written)
+    return 0;
+
+  uint32_t v_written = jp_export_value_union_to_buffer(& kv_pair->union_v, kv_pair->value_type, buffer);
+
+  if (0 == v_written)
+    return 0;
+
+  return k_written + v_written;
+}
+
+uint32_t jp_export_kv_pair_to_static_buffer(jp_TLV_kv_pair_t *kv_pair,
+                                            uint8_t          *buffer,
+                                            size_t            buffer_size)
+{
+  jp_buffer_io_t buffer_io;
+  jp_buffer_io_initialize_static(& buffer_io, buffer, buffer_size);
+
+  return jp_export_kv_pair_to_buffer(kv_pair, & buffer_io);
+}
+
+uint32_t jp_import_kv_pair_from_buffer(apr_pool_t       *pool,
+                                       jp_TLV_kv_pair_t *kv_pair,
+                                       jp_buffer_io_t   *buffer)
+{
+  uint32_t k_read = jp_import_uint32_from_buffer(& kv_pair->key_index, buffer);
+
+  if (0 == k_read)
+    return 0;
+
+  printf("jp_import_kv_pair_from_buffer: read index %d \n", kv_pair->key_index);
+
+  uint32_t v_read = jp_import_value_union_from_buffer(pool, & kv_pair->union_v, & kv_pair->value_type, buffer);
+
+  if (0 == v_read)
+    return 0;
+
+  printf("jp_import_kv_pair_from_buffer: read value type %d \n", kv_pair->value_type);
+
+
+  return k_read + v_read;
+}
+
+uint32_t jp_import_kv_pair_from_static_buffer(apr_pool_t       *pool,
+                                              jp_TLV_kv_pair_t *kv_pair,
+                                              uint8_t          *buffer,
+                                              size_t            buffer_size)
+{
+  jp_buffer_io_t buffer_io;
+  jp_buffer_io_initialize_static(& buffer_io, buffer, buffer_size);
+
+  return jp_import_kv_pair_from_buffer(pool, kv_pair, & buffer_io);
+}
+
+
 uint32_t jp_export_record_to_buffer(const jp_TLV_record_t *record,
-                                          uint8_t         *buffer,
-                                          size_t           buffer_size)
+                                          jp_buffer_io_t  *buffer)
 {
   uint32_t            written  = 0;
   apr_array_header_t* kv_array = record->kv_pairs_array;
   uint32_t            nb_pairs = kv_array->nelts;
 
-  uint32_t length_written = jp_export_uint32_to_buffer(nb_pairs, buffer, buffer_size);
+  uint32_t length_written = jp_export_uint32_to_buffer(nb_pairs, buffer);
 
   if (0 == length_written)
     return 0;
@@ -544,10 +582,7 @@ uint32_t jp_export_record_to_buffer(const jp_TLV_record_t *record,
   for (int i = 0; i < nb_pairs; i++) {
     jp_TLV_kv_pair_t* elem = & ((jp_TLV_kv_pair_t*)kv_array->elts)[i];
 
-    if (written > buffer_size)
-      return 0;
-
-    uint32_t new_written = jp_export_kv_pair_to_buffer(elem, buffer + written, buffer_size - written);
+    uint32_t new_written = jp_export_kv_pair_to_buffer(elem, buffer);
 
     if (0 == new_written)
       return 0;
@@ -558,10 +593,19 @@ uint32_t jp_export_record_to_buffer(const jp_TLV_record_t *record,
   return written;
 }
 
-uint32_t jp_import_record_from_buffer(      apr_pool_t       *pool,
-                                            jp_TLV_record_t **record,
-                                      const uint8_t          *buffer,
-                                            size_t            buffer_size)
+uint32_t jp_export_record_to_static_buffer(const jp_TLV_record_t *record,
+                                                 uint8_t         *buffer,
+                                                 size_t           buffer_size)
+{
+  jp_buffer_io_t buffer_io;
+  jp_buffer_io_initialize_static(& buffer_io, buffer, buffer_size);
+
+  return jp_export_record_to_buffer(record, & buffer_io);
+}
+
+uint32_t jp_import_record_from_buffer(apr_pool_t       *pool,
+                                      jp_TLV_record_t **record,
+                                      jp_buffer_io_t   *buffer)
 {
   uint32_t read = 0;
   uint32_t nb_pairs;
@@ -570,7 +614,7 @@ uint32_t jp_import_record_from_buffer(      apr_pool_t       *pool,
 
   apr_array_header_t* kv_array = (*record)->kv_pairs_array;
 
-  uint32_t length_read = jp_import_uint32_from_buffer(& nb_pairs, buffer, buffer_size);
+  uint32_t length_read = jp_import_uint32_from_buffer(& nb_pairs, buffer);
 
   if (0 == length_read)
     return 0;
@@ -580,10 +624,7 @@ uint32_t jp_import_record_from_buffer(      apr_pool_t       *pool,
   for (int i = 0; i < nb_pairs; i++) {
     jp_TLV_kv_pair_t* elem = apr_array_push(kv_array);
 
-    if (read > buffer_size)
-      return 0;
-
-    uint32_t new_read = jp_import_kv_pair_from_buffer(pool, elem, buffer + read, buffer_size - read);
+    uint32_t new_read = jp_import_kv_pair_from_buffer(pool, elem, buffer);
 
     if (0 == new_read)
       return 0;
@@ -592,6 +633,17 @@ uint32_t jp_import_record_from_buffer(      apr_pool_t       *pool,
   }
 
   return read;
+}
+
+uint32_t jp_import_record_from_static_buffer(apr_pool_t       *pool,
+                                             jp_TLV_record_t **record,
+                                             uint8_t          *buffer,
+                                             size_t            buffer_size)
+{
+  jp_buffer_io_t buffer_io;
+  jp_buffer_io_initialize_static(& buffer_io, buffer, buffer_size);
+
+  return jp_import_record_from_buffer(pool, record, & buffer_io);
 }
 
 typedef struct jp_TLV_record_builder
@@ -662,19 +714,6 @@ int jp_update_records_from_json(apr_pool_t       *pool,
   json_c_visit(jso, 0, json_record_builder_visitor, &builder);
 
   return 0;
-}
-
-
-int jp_export_records_to_file_set(jp_TLV_records_t *record_collection,
-                                  FILE             *kv_pair_output,
-                                  FILE             *key_index_output)
-{
-}
-
-int jp_import_records_from_file_set(jp_TLV_records_t *record_collection,
-                                    FILE             *kv_pair_input,
-                                    FILE             *key_index_input)
-{
 }
 
 
