@@ -1,15 +1,15 @@
 
 
-## Json Packer
+# Json Packer
 
 
 ----------------------------------------------------------------------------------
 
-# Use case
+## Use case
 
 Any application that produces massive amounts of json records, and wants an efficient approach to compress the records at regular intervals.
 
-# Instructions
+## Instructions
 
  This project compiles as other cmake projects:
 
@@ -38,7 +38,7 @@ Any application that produces massive amounts of json records, and wants an effi
 
  this will contain all the aggregated records of all the input file sets.
 
-# Tests
+## Tests
 
   two set of tests can be run:
 
@@ -46,6 +46,6 @@ Any application that produces massive amounts of json records, and wants an effi
 
 - `./jp_consolidation_test.sh` exercises consolidation from 3 json record files, and finally unpacks the content of the consolidated file set
 
-# Author
+## Author
 
  Charles J. Quarra
